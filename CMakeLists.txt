@@ -105,7 +105,6 @@ endif ()
 
 add_subdirectory(src)
 
-
 if (CMAKE_SYSTEM_NAME MATCHES "Linux|Darwin")
     set(NEAT_CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH})
     string(REPLACE ";" "|" CMAKE_PREFIX_PATH_ALT_SEP "${NEAT_CMAKE_PREFIX_PATH}")

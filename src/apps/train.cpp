@@ -544,7 +544,8 @@ class NeuralTrainer
 
             bool last_ep         = epoch_id == params->train_params.num_epochs;
             bool save_checkpoint = epoch_id % params->train_params.save_checkpoints_its == 0 || last_ep;
-
+            double early_stopping_psnr = params->train_params.early_stopping_psnr;
+            
             // always save cp on add_remove
             save_checkpoint |= point_important_epoch_for_train;
             save_checkpoint |= point_important_epoch_for_eval;
@@ -648,9 +649,11 @@ class NeuralTrainer
                     EvalEpoch(epoch_id, save_checkpoint);
 
                     TestEpoch(epoch_id);
+                    float max_psnr = std::numeric_limits<float>::lowest();
                     for (auto& sd : train_scenes->data)
                     {
                         auto avg = sd.epoch_loss.Average();
+                        max_psnr = std::max(max_psnr, avg.loss_psnr);
                         tblogger->add_scalar("LossEval/" + sd.scene->scene->scene_name + "/vgg", epoch_id,
                                              avg.loss_vgg);
                         tblogger->add_scalar("LossEval/" + sd.scene->scene->scene_name + "/lpips", epoch_id,
@@ -659,6 +662,14 @@ class NeuralTrainer
                                              avg.loss_psnr);
                         avg.AppendToFile(full_experiment_dir + "loss_eval_" + sd.scene->scene->scene_name + ".txt",
                                          epoch_id);
+                    }
+                    if (max_psnr >= early_stopping_psnr)
+                    {
+                        std::cout << "Early stopping triggered. at Epoch " << epoch_id 
+                                  << " because  PSNR > " << early_stopping_psnr 
+                                  << "No further evaluation is needed." << std::endl;
+                                  
+                        break;
                     }
                 }
             }
